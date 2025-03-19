@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TestProvider } from "@/contexts/TestContext";
+import { StudentProvider } from "@/contexts/StudentContext";
 
 // Pages
 import LoginPage from "./pages/LoginPage";
@@ -46,56 +47,58 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TestProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<LoginPage />} />
-              <Route path="/student/login/:testId" element={<StudentLogin />} />
-              <Route path="/student/details/:testId" element={<StudentDetails />} />
-              <Route path="/student/exam/:testId" element={<StudentExam />} />
+        <StudentProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<LoginPage />} />
+                <Route path="/student/login/:testId" element={<StudentLogin />} />
+                <Route path="/student/details/:testId" element={<StudentDetails />} />
+                <Route path="/student/exam/:testId" element={<StudentExam />} />
 
-              {/* Protected Admin Routes */}
-              <Route 
-                path="/admin/dashboard" 
-                element={
-                  <ProtectedRoute>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/create-test" 
-                element={
-                  <ProtectedRoute>
-                    <CreateTest />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/update-test" 
-                element={
-                  <ProtectedRoute>
-                    <UpdateTest />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/manage-test" 
-                element={
-                  <ProtectedRoute>
-                    <ManageTest />
-                  </ProtectedRoute>
-                } 
-              />
+                {/* Protected Admin Routes */}
+                <Route 
+                  path="/admin/dashboard" 
+                  element={
+                    <ProtectedRoute>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/create-test" 
+                  element={
+                    <ProtectedRoute>
+                      <CreateTest />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/update-test" 
+                  element={
+                    <ProtectedRoute>
+                      <UpdateTest />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/manage-test" 
+                  element={
+                    <ProtectedRoute>
+                      <ManageTest />
+                    </ProtectedRoute>
+                  } 
+                />
 
-              {/* Catch All */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+                {/* Catch All */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </StudentProvider>
       </TestProvider>
     </AuthProvider>
   </QueryClientProvider>

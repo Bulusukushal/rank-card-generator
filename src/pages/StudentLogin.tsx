@@ -13,10 +13,12 @@ import {
   CardTitle 
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { useTest } from '@/contexts/TestContext';
 
 const StudentLogin: React.FC = () => {
   const navigate = useNavigate();
   const { testId } = useParams<{ testId: string }>();
+  const { tests } = useTest();
   const { toast } = useToast();
   
   const [username, setUsername] = useState('');
@@ -28,14 +30,35 @@ const StudentLogin: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // In a real application, this would validate against a database
-      // For the demo, we'll accept any credentials
-      if (username && password) {
+      // Verify if the test exists and is active
+      const test = tests.find(t => t.id === testId);
+      
+      if (!test) {
+        toast({
+          title: "Test not found",
+          description: "The requested exam does not exist",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!test.isActive) {
+        toast({
+          title: "Exam not active",
+          description: "This exam is not currently available",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Simple validation logic for student login
+      // In a real app this would be handled by a backend
+      if (username === 'student' && password === 'password') {
         navigate(`/student/details/${testId}`);
       } else {
         toast({
           title: "Login failed",
-          description: "Please enter your username and password",
+          description: "Invalid username or password",
           variant: "destructive",
         });
       }
@@ -64,8 +87,6 @@ const StudentLogin: React.FC = () => {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
-                  autoComplete="username"
-                  className="transition-all duration-200"
                 />
               </div>
               <div className="space-y-2">
@@ -77,8 +98,6 @@ const StudentLogin: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  autoComplete="current-password"
-                  className="transition-all duration-200"
                 />
               </div>
               <Button 
@@ -86,13 +105,13 @@ const StudentLogin: React.FC = () => {
                 className="w-full"
                 disabled={isLoading}
               >
-                {isLoading ? 'Signing in...' : 'Sign In'}
+                {isLoading ? 'Logging in...' : 'Login'}
               </Button>
             </form>
           </CardContent>
-          <CardFooter className="flex justify-center border-t pt-6">
+          <CardFooter className="flex justify-center">
             <p className="text-sm text-muted-foreground">
-              Exam Portal - Student Access
+              For testing, use username: student and password: password
             </p>
           </CardFooter>
         </Card>
