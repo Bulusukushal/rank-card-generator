@@ -11,7 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { FileText, Edit, PlaySquare } from 'lucide-react';
+import { LayoutDashboard, FileText, Edit, PlaySquare } from 'lucide-react';
 
 const AdminSidebar = () => {
   const navigate = useNavigate();
@@ -20,6 +20,11 @@ const AdminSidebar = () => {
   const isActive = (path: string) => location.pathname === path;
   
   const menuItems = [
+    {
+      title: 'Dashboard',
+      path: '/admin/dashboard',
+      icon: LayoutDashboard,
+    },
     {
       title: 'Create Test',
       path: '/admin/create-test',
