@@ -149,25 +149,23 @@ const CreateTest: React.FC = () => {
             <div className="space-y-2">
               <h3 className="font-medium">Document Format Instructions</h3>
               <p className="text-sm text-muted-foreground">
-                The uploaded document should follow this format for each question:
+                The uploaded document should follow this format:
               </p>
               <div className="text-sm p-3 bg-background rounded text-muted-foreground font-mono">
                 <pre>
-{`Question: What is the capital of France?
-Option 1: London
-Option 2: Paris
-Option 3: Berlin
-Option 4: Madrid
+{`Category: aptitude
+Question: What is the capital of France?
+A) London B) Paris C) Berlin D) Madrid
 Answer: Paris
-Category: aptitude
 
 Question: What does HTML stand for?
-Option 1: Hyper Text Markup Language
-Option 2: High Tech Multi Language
-Option 3: Hyper Transfer Markup Language
-Option 4: None of the above
+A) Hyper Text Markup Language B) High Tech Multi Language C) Hyper Transfer Markup Language D) None of the above
 Answer: Hyper Text Markup Language
-Category: coding`}
+
+Category: coding
+Question: What is the main use of CSS?
+A) Styling B) Logic C) Database D) Authentication
+Answer: Styling`}
                 </pre>
               </div>
               <p className="text-sm text-muted-foreground">

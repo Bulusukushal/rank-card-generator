@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -89,7 +88,6 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
       )
     );
     
-    // If we're updating the active test, update that as well
     if (activeTest?.id === id) {
       setActiveTest((prev) => prev ? { ...prev, ...testData } : prev);
     }
@@ -111,7 +109,6 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     
-    // End any currently active test
     if (activeTest) {
       endTest(activeTest.id);
     }
@@ -148,21 +145,17 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const getExamLink = (testId: string) => {
-    // This would be a real URL in production
     return `/student/exam/${testId}`;
   };
 
   const addStudentResult = (testId: string, result: StudentResult) => {
     setStudentResults(prev => {
       const testResults = [...(prev[testId] || [])];
-      // Check if student already has a result for this test
       const existingResultIndex = testResults.findIndex(r => r.rollNo === result.rollNo);
       
       if (existingResultIndex >= 0) {
-        // Update existing result
         testResults[existingResultIndex] = result;
       } else {
-        // Add new result
         testResults.push(result);
       }
       
@@ -177,74 +170,53 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return studentResults[testId] || [];
   };
 
-  // Function to parse the docx file and extract questions
   const parseDocFile = async (file: File): Promise<Question[]> => {
     try {
-      // This is a placeholder for actual docx parsing logic
-      // In a real application, you would use a library to parse the docx file
-      // For demonstration, we'll simulate reading the file as text
-      
       const text = await file.text();
       
-      // This is a simple parser that expects a specific format:
-      // Question: [question text]
-      // Option 1: [option]
-      // Option 2: [option]
-      // Option 3: [option]
-      // Option 4: [option]
-      // Answer: [option text]
-      // Category: [coding|math|aptitude|communication]
-      
       const questions: Question[] = [];
+      let currentCategory: 'coding' | 'math' | 'aptitude' | 'communication' | null = null;
       const lines = text.split('\n');
-      
-      let currentQuestion: Partial<Question> = {};
-      let options: string[] = [];
       
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
         
-        if (line.startsWith('Question:')) {
-          // Save previous question if exists
-          if (currentQuestion.text && options.length && currentQuestion.answer) {
-            questions.push({
-              id: `q-${questions.length + 1}`,
-              text: currentQuestion.text,
-              options: [...options],
-              answer: currentQuestion.answer,
-              category: currentQuestion.category as 'coding' | 'math' | 'aptitude' | 'communication',
-            });
-          }
-          
-          // Start new question
-          currentQuestion = {
-            text: line.substring(9).trim(),
-          };
-          options = [];
-        } else if (line.startsWith('Option')) {
-          const option = line.substring(line.indexOf(':') + 1).trim();
-          options.push(option);
-        } else if (line.startsWith('Answer:')) {
-          currentQuestion.answer = line.substring(7).trim();
-        } else if (line.startsWith('Category:')) {
-          const category = line.substring(9).trim().toLowerCase();
+        if (!line) continue;
+        
+        if (line.startsWith('Category:')) {
+          const category = line.substring('Category:'.length).trim().toLowerCase();
           if (['coding', 'math', 'aptitude', 'communication'].includes(category)) {
-            currentQuestion.category = category as 'coding' | 'math' | 'aptitude' | 'communication';
-          } else {
-            currentQuestion.category = 'coding'; // Default category
+            currentCategory = category as 'coding' | 'math' | 'aptitude' | 'communication';
+          }
+          continue;
+        }
+        
+        if (line.startsWith('Question:')) {
+          const questionText = line.substring('Question:'.length).trim();
+          
+          if (i + 1 < lines.length) {
+            const optionsLine = lines[i + 1].trim();
+            
+            let options: string[] = [];
+            if (optionsLine.includes(')')) {
+              options = optionsLine.split(/[A-D]\)/).map(opt => opt.trim()).filter(Boolean);
+            }
+            
+            if (i + 2 < lines.length && lines[i + 2].trim().startsWith('Answer:')) {
+              const answer = lines[i + 2].substring('Answer:'.length).trim();
+              
+              questions.push({
+                id: `q-${questions.length + 1}`,
+                text: questionText,
+                options,
+                answer,
+                category: currentCategory || 'aptitude',
+              });
+              
+              i += 2;
+            }
           }
         }
-      }
-      
-      // Add the last question if it exists
-      if (currentQuestion.text && options.length && currentQuestion.answer && currentQuestion.category) {
-        questions.push({
-          id: `q-${questions.length + 1}`,
-          text: currentQuestion.text,
-          options: [...options],
-          answer: currentQuestion.answer,
-          category: currentQuestion.category as 'coding' | 'math' | 'aptitude' | 'communication',
-        });
       }
       
       if (questions.length === 0) {
