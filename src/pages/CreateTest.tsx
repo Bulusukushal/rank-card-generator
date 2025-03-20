@@ -15,17 +15,25 @@ import {
   CardTitle 
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { generateDefaultQuestions } from '@/utils/questionGenerator';
+import FileUploader from '@/components/FileUploader';
+import { AlertCircle, FileIcon } from 'lucide-react';
 
 const CreateTest: React.FC = () => {
   const navigate = useNavigate();
-  const { createTest } = useTest();
+  const { createTest, parseDocFile } = useTest();
   const { toast } = useToast();
   const [year, setYear] = useState('');
   const [semester, setSemester] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   
-  const handleCreateTest = () => {
+  const handleFileUpload = (uploadedFile: File) => {
+    setFile(uploadedFile);
+    setFileError(null);
+  };
+  
+  const handleCreateTest = async () => {
     if (!year || !semester) {
       toast({
         title: "Validation error",
@@ -35,26 +43,50 @@ const CreateTest: React.FC = () => {
       return;
     }
     
+    if (!file) {
+      toast({
+        title: "File required",
+        description: "Please upload a questions document",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsCreating(true);
-    const testName = `${year}-${semester}`;
+    setFileError(null);
     
-    // Generate default questions for each category
-    const questions = generateDefaultQuestions();
-    
-    createTest({
-      name: testName,
-      year,
-      semester,
-      questions,
-    });
-    
-    toast({
-      title: "Test created",
-      description: `Test "${testName}" has been created with default questions`,
-    });
-    
-    setIsCreating(false);
-    navigate('/admin/dashboard');
+    try {
+      const questions = await parseDocFile(file);
+      const testName = `${year}-${semester}`;
+      
+      createTest({
+        name: testName,
+        year,
+        semester,
+        questions,
+      });
+      
+      toast({
+        title: "Test created",
+        description: `Test "${testName}" has been created with ${questions.length} questions`,
+      });
+      
+      navigate('/admin/dashboard');
+    } catch (error) {
+      if (error instanceof Error) {
+        setFileError(error.message);
+      } else {
+        setFileError('An unknown error occurred. Please try again.');
+      }
+      
+      toast({
+        title: "Error creating test",
+        description: "There was a problem parsing the question file",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreating(false);
+    }
   };
   
   return (
@@ -63,7 +95,7 @@ const CreateTest: React.FC = () => {
         <CardHeader>
           <CardTitle>Create a New Exam</CardTitle>
           <CardDescription>
-            Enter exam details to create a test with default questions
+            Enter exam details and upload a question document
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -88,18 +120,59 @@ const CreateTest: React.FC = () => {
             </div>
           </div>
           
+          <div className="space-y-2">
+            <Label>Upload Questions Document</Label>
+            <FileUploader 
+              onFileUpload={handleFileUpload} 
+              accept=".txt,.docx,.doc"
+            />
+            
+            {file && !fileError && (
+              <div className="flex items-center gap-2 text-sm p-2 bg-primary/5 rounded-md border border-primary/20">
+                <FileIcon size={16} className="text-primary" />
+                <span className="font-medium">{file.name}</span>
+                <span className="text-muted-foreground">({Math.round(file.size/1024)} KB)</span>
+              </div>
+            )}
+            
+            {fileError && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-sm space-y-2">
+                <div className="flex items-start gap-2">
+                  <AlertCircle size={16} className="text-destructive mt-0.5" />
+                  <span className="font-medium text-destructive">{fileError}</span>
+                </div>
+              </div>
+            )}
+          </div>
+          
           <div className="rounded-lg border p-4 bg-secondary/30">
             <div className="space-y-2">
-              <h3 className="font-medium">Default Questions Will Be Generated</h3>
+              <h3 className="font-medium">Document Format Instructions</h3>
               <p className="text-sm text-muted-foreground">
-                The test will be created with a set of default questions covering:
+                The uploaded document should follow this format for each question:
               </p>
-              <ul className="text-sm list-disc pl-5 text-muted-foreground">
-                <li>Coding (5 questions)</li>
-                <li>Math (5 questions)</li>
-                <li>Aptitude (5 questions)</li>
-                <li>Communication (5 questions)</li>
-              </ul>
+              <div className="text-sm p-3 bg-background rounded text-muted-foreground font-mono">
+                <pre>
+{`Question: What is the capital of France?
+Option 1: London
+Option 2: Paris
+Option 3: Berlin
+Option 4: Madrid
+Answer: Paris
+Category: aptitude
+
+Question: What does HTML stand for?
+Option 1: Hyper Text Markup Language
+Option 2: High Tech Multi Language
+Option 3: Hyper Transfer Markup Language
+Option 4: None of the above
+Answer: Hyper Text Markup Language
+Category: coding`}
+                </pre>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Categories must be one of: coding, math, aptitude, or communication.
+              </p>
             </div>
           </div>
         </CardContent>
@@ -112,7 +185,7 @@ const CreateTest: React.FC = () => {
           </Button>
           <Button 
             onClick={handleCreateTest}
-            disabled={!year || !semester || isCreating}
+            disabled={!year || !semester || !file || isCreating}
           >
             {isCreating ? 'Creating...' : 'Create Test'}
           </Button>

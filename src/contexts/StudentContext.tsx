@@ -1,7 +1,7 @@
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Test, Question } from '@/contexts/TestContext';
+import { Test, Question, useTest, StudentResult } from '@/contexts/TestContext';
 
 export type StudentAnswer = {
   questionId: string;
@@ -10,6 +10,7 @@ export type StudentAnswer = {
 };
 
 export type StudentData = {
+  studentId: string;
   name: string;
   rollNo: string;
   year: string;
@@ -29,7 +30,7 @@ export type StudentData = {
 
 type StudentContextType = {
   studentData: StudentData | null;
-  setStudentInfo: (data: Omit<StudentData, 'answers' | 'scores' | 'completedAt'>) => void;
+  setStudentInfo: (data: Omit<StudentData, 'studentId' | 'answers' | 'scores' | 'completedAt'>) => void;
   saveAnswer: (questionId: string, selectedOption: string, isCorrect: boolean) => void;
   calculateScores: (test: Test) => void;
   clearStudentData: () => void;
@@ -58,10 +59,12 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [studentData, setStudentData] = useState<StudentData | null>(null);
   const [isExamCompleted, setIsExamCompleted] = useState(false);
   const { toast } = useToast();
+  const { addStudentResult } = useTest();
 
-  const setStudentInfo = (data: Omit<StudentData, 'answers' | 'scores' | 'completedAt'>) => {
+  const setStudentInfo = (data: Omit<StudentData, 'studentId' | 'answers' | 'scores' | 'completedAt'>) => {
     setStudentData({
       ...data,
+      studentId: `student-${Date.now()}`,
       answers: [],
       scores: { ...emptyScores },
       completedAt: null,
@@ -138,22 +141,32 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     });
 
-    // Calculate percentages based on maximum possible scores
-    for (const category of ['coding', 'math', 'aptitude', 'communication'] as const) {
-      const questionsInCategory = questionsByCategory[category]?.length || 0;
-      if (questionsInCategory > 0) {
-        // Store raw scores (correct answers count)
-        categoryScores[category] = categoryScores[category];
-      }
-    }
+    const completionTime = new Date();
 
     setStudentData(prevData => {
       if (!prevData) return null;
-      return {
+      
+      const updatedData = {
         ...prevData,
         scores: categoryScores,
-        completedAt: new Date(),
+        completedAt: completionTime,
       };
+      
+      // Add the student result to the test context
+      const studentResult: StudentResult = {
+        studentId: updatedData.studentId,
+        name: updatedData.name,
+        rollNo: updatedData.rollNo,
+        year: updatedData.year,
+        branch: updatedData.branch,
+        section: updatedData.section,
+        scores: categoryScores,
+        completedAt: completionTime,
+      };
+      
+      addStudentResult(updatedData.testId, studentResult);
+      
+      return updatedData;
     });
 
     setIsExamCompleted(true);
